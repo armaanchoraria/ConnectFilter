@@ -24,21 +24,21 @@ function setDisabled(v) {
   ['previewBtn','acceptBtn','ignoreBtn'].forEach(id => { if($(id)) $(id).disabled = v; });
 }
 
-// Load saved settings — always clear MM so fresh start uses default 30
-chrome.storage.sync.get([KEYS.KW, KEYS.MM], data => {
+// Store preferences in this browser only; no request data is sent by the extension.
+chrome.storage.local.get([KEYS.KW, KEYS.MM], data => {
   $('keywords').value = data[KEYS.KW] ?? DEFAULTS.KW;
   mutuals = data[KEYS.MM] ?? DEFAULTS.MM;
   $('sval').textContent = mutuals;
 });
 
 $('keywords').addEventListener('input', () => {
-  chrome.storage.sync.set({ [KEYS.KW]: $('keywords').value });
+  chrome.storage.local.set({ [KEYS.KW]: $('keywords').value });
 });
 
 function updateMutuals(v) {
   mutuals = Math.max(0, Math.min(500, v));
   $('sval').textContent = mutuals;
-  chrome.storage.sync.set({ [KEYS.MM]: mutuals });
+  chrome.storage.local.set({ [KEYS.MM]: mutuals });
 }
 $('sdown').addEventListener('click', () => updateMutuals(mutuals - 5));
 $('sup').addEventListener('click',   () => updateMutuals(mutuals + 5));
@@ -132,7 +132,7 @@ $('ignoreBtn').addEventListener('click', async () => {
     setStatus('Go to your LinkedIn invitations page first.', 'warn');
     return;
   }
-  if (!confirm('Ignore ALL remaining visible requests? This cannot be undone.')) return;
+  if (!confirm('Ignore the currently visible requests? This cannot be undone.')) return;
   $('previewPanel').style.display = 'none';
   setStatus('Ignoring requests…', 'info');
   setDisabled(true);

@@ -4,9 +4,9 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function randDelay() { return SAFETY.MIN_MS + Math.random() * (SAFETY.MAX_MS - SAFETY.MIN_MS); }
 
 function getMutuals(text) {
-  const m = text.match(/(\d+)\s+other mutual/i);
-  if (m) return parseInt(m[1]) + 1;
-  if (/\bmutual connection\b/i.test(text)) return 1;
+  const m = text.match(/(\d+)\s+(?:other\s+)?mutual connections?/i);
+  if (m) return Number.parseInt(m[1], 10);
+  if (/\bmutual connections?\b/i.test(text)) return 1;
   return 0;
 }
 
@@ -25,8 +25,8 @@ function getCard(btn) {
 
 function getAcceptButtons() {
   return [...document.querySelectorAll('button')].filter(b => {
-    const t = b.innerText.trim();
-    return t === 'Accept' || t === 'Accept connection';
+    const t = b.textContent.trim();
+    return !b.disabled && b.offsetParent !== null && (t === 'Accept' || t === 'Accept connection');
   });
 }
 
@@ -85,14 +85,18 @@ async function runAccept(keywords, minMutual, notify) {
   return accepted;
 }
 
-// IGNORE ALL
+// IGNORE VISIBLE — a deliberate, capped bulk action.
 async function runIgnore(notify) {
   let ignored = 0;
   const btns = [...document.querySelectorAll('button')].filter(b => {
-    const t = b.innerText.trim();
-    return t === 'Ignore' || t === 'Decline';
+    const t = b.textContent.trim();
+    return !b.disabled && b.offsetParent !== null && (t === 'Ignore' || t === 'Decline');
   });
   for (const btn of btns) {
+    if (ignored >= SAFETY.CAP) {
+      notify(`Session cap of ${SAFETY.CAP} reached. Take a break first.`, true);
+      return ignored;
+    }
     await sleep(randDelay());
     btn.click();
     ignored++;
